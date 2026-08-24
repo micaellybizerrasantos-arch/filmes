@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CineCatálogo - Seu Guia de Filmes</title>
+    <style>
+        /* CSS: Estilização da Página */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #141414;
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        header {
+            background-color: #000000;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+        }
+
+        h1 {
+            color: #e50914;
+            font-size: 1.8rem;
+            letter-spacing: 1px;
+        }
+
+        .filtros {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        input, select {
+            padding: 10px 15px;
+            border-radius: 5px;
+            border: 1px solid #333;
+            background-color: #222;
+            color: #fff;
+            font-size: 0.9rem;
+            outline: none;
+        }
+
+        input:focus, select:focus {
+            border-color: #e50914;
+        }
+
+        main {
+            padding: 40px;
+            flex: 1;
+        }
+
+        .grid-filmes {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 25px;
+        }
+
+        .card-filme {
+            background-color: #1f1f1f;
+            border-radius: 8px;
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card-filme:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 8px 20px rgba(229, 9, 20, 0.3);
+        }
+
+        .card-filme img {
+            width: 100%;
+            height: 300px;
+            object-fit: cover;
+        }
+
+        .card-info {
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            flex: 1;
+        }
+
+        .card-titulo {
+            font-size: 1.1rem;
+            font-weight: bold;
+        }
+
+        .card-detalhes {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            color: #aaa;
+        }
+
+        .nota {
+            color: #f5c518;
+            font-weight: bold;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.85);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+
+        .modal-conteudo {
+            background-color: #1f1f1f;
+            padding: 30px;
+            border-radius: 10px;
+            max-width: 500px;
+            width: 100%;
+            position: relative;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+        }
+
+        .fechar-modal {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #aaa;
+        }
+
+        .fechar-modal:hover {
+            color: #fff;
+        }
+
+        .modal-titulo {
+            color: #e50914;
+            margin-bottom: 10px;
+        }
+
+        .modal-sinopse {
+            margin: 15px 0;
+            line-height: 1.5;
+            color: #ddd;
+            font-size: 0.95rem;
+        }
+
+        footer {
+            text-align: center;
+            padding: 20px;
+            background-color: #000000;
+            color: #777;
+            font-size: 0.85rem;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>CineCatálogo</h1>
+        <div class="filtros">
+            <input type="text" id="campoBusca" placeholder="Buscar por título...">
+            <select id="filtroGenero">
+                <option value="Todos">Todos os Gêneros</option>
+                <option value="Ação">Ação</option>
+                <option value="Ficção Científica">Ficção Científica</option>
+                <option value="Drama">Drama</option>
+                <option value="Animação">Animação</option>
+            </select>
+        </div>
+    </header>
+
+    <main>
+        <div class="grid-filmes" id="gridFilmes"></div>
+    </main>
+
+    <!-- Modal para Detalhes -->
+    <div class="modal" id="modalFilme">
+        <div class="modal-conteudo">
+            <span class="fechar-modal" id="fecharModal">&times;</span>
+            <h2 class="modal-titulo" id="modalTitulo"></h2>
+            <p><strong>Gênero:</strong> <span id="modalGenero"></span> | <strong>Ano:</strong> <span id="modalAno"></span></p>
+            <p class="modal-sinopse" id="modalSinopse"></p>
+            <p><strong>Avaliação:</strong> <span class="nota" id="modalNota"></span> / 10</p>
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2026 CineCatálogo - Todos os direitos reservados.</p>
+    </footer>
+
+    <script>
+        // JAVASCRIPT: Dados e Lógica de Funcionamento
+        const filmes = [
+            {
+                id: 1,
+                titulo: "Inception",
+                genero: "Ficção Científica",
+                ano: 2010,
+                nota: 8.8,
+                imagem: "https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=400&q=80",
+                sinopse: "Um ladrão que rouba segredos corporativos por meio do uso de tecnologia de compartilhamento de sonhos recebe a tarefa inversa de plantar uma idéia na mente de um CEO."
+            },
+            {
+                id: 2,
+                titulo: "O Poderoso Chefão",
+                genero: "Drama",
+                ano: 1972,
+                nota: 9.2,
+                imagem: "https://images.unsplash.com/photo-1485846234645-a62644f84728?w=400&q=80",
+                sinopse: "O patriarca idoso de uma dinastia do crime organizado transfere o controle de seu império clandestino para seu filho relutante."
+            },
+            {
+                id: 3,
+                titulo: "Matrix",
+                genero: "Ficção Científica",
+                ano: 1999,
+                nota: 8.7,
+                imagem: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=400&q=80",
+                sinopse: "Um hacker descobre pela mão de rebeldes misteriosos a verdadeira natureza de sua realidade e seu papel na guerra contra seus controladores."
+            },
+            {
+                id: 4,
+                titulo: "Interstellar",
+                genero: "Ficção Científica",
+                ano: 2014,
+                nota: 8.7,
+                imagem: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=400&q=80",
+                sinopse: "Uma equipe de exploradores viaja através de um buraco de minhoca no espaço na tentativa de garantir a sobrevivência da humanidade."
+            },
+            {
+                id: 5,
+                titulo: "Spirited Away",
+                genero: "Animação",
+                ano: 2001,
+                nota: 8.6,
+                imagem: "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400&q=80",
+                sinopse: "Durante a mudança de sua família para o subúrbio, uma garota de 10 anos entra em um mundo governado por deuses, bruxas e espíritos."
+            },
+            {
+                id: 6,
+                titulo: "Batman: O Cavaleiro das Trevas",
+                genero: "Ação",
+                ano: 2008,
+                nota: 9.0,
+                imagem: "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=400&q=80",
+                sinopse: "Quando a ameaça conhecida como Coringa emerge, Batman deve aceitar um dos maiores testes psicológicos e físicos de sua capacidade de combater a injustiça."
+            }
+        ];
+
+        // Referências aos elementos do DOM
+        const gridFilmes = document.getElementById('gridFilmes');
+        const campoBusca = document.getElementById('campoBusca');
+        const filtroGenero = document.getElementById('filtroGenero');
+        
+        const modal = document.getElementById('modalFilme');
+        const fecharModal = document.getElementById('fecharModal');
+        const modalTitulo = document.getElementById('modalTitulo');
+        const modalGenero = document.getElementById('modalGenero');
+        const modalAno = document.getElementById('modalAno');
+        const modalSinopse = document.getElementById('modalSinopse');
+        const modalNota = document.getElementById('modalNota');
+
+        // Função para renderizar os cartões de filme
+        function exibirFilmes(lista) {
+            gridFilmes.innerHTML = '';
+
+            if (lista.length === 0) {
+                gridFilmes.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: #aaa;">Nenhum filme encontrado.</p>';
+                return;
+            }
+
+            lista.forEach(filme => {
+                const card = document.createElement('div');
+                card.classList.add('card-filme');
+                card.onclick = () => abrirModal(filme);
+
+                card.innerHTML = `
+                    <img src="${filme.imagem}" alt="${filme.titulo}">
+                    <div class="card-info">
+                        <div class="card-titulo">${filme.titulo}</div>
+                        <div class="card-detalhes">
+                            <span>${filme.ano}</span>
+                            <span class="nota">★ ${filme.nota}</span>
+                        </div>
+                    </div>
+                `;
+
+                gridFilmes.appendChild(card);
+            });
+        }
+
+        // Função para filtrar os filmes por texto e gênero
+        function filtrarFilmes() {
+            const textoBusca = campoBusca.value.toLowerCase();
+            const generoSelecionado = filtroGenero.value;
+
+            const filmesFiltrados = filmes.filter(filme => {
+                const combinaTitulo = filme.titulo.toLowerCase().includes(textoBusca);
+                const combinaGenero = generoSelecionado === 'Todos' || filme.genero === generoSelecionado;
+                return combinaTitulo && combinaGenero;
+            });
+
+            exibirFilmes(filmesFiltrados);
+        }
+
+        // Funções da Janela Modal
+        function abrirModal(filme) {
+            modalTitulo.textContent = filme.titulo;
+            modalGenero.textContent = filme.genero;
+            modalAno.textContent = filme.ano;
+            modalSinopse.textContent = filme.sinopse;
+            modalNota.textContent = filme.nota;
+            modal.style.display = 'flex';
+        }
+
+        fecharModal.onclick = () => {
+            modal.style.display = 'none';
+        };
+
+        window.onclick = (event) => {
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
+        };
+
+        // Eventos para atualização em tempo real
+        campoBusca.addEventListener('input', filtrarFilmes);
+        filtroGenero.addEventListener('change', filtrarFilmes);
+
+        // Renderização inicial
+        exibirFilmes(filmes);
+    </script>
+</body>
+</html>
